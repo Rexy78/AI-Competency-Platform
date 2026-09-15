@@ -1,0 +1,5 @@
+Target Role: {target_role}
+Candidate Skills: {skills}
+Skill Gaps: {missing_skills}
+
+Provide clear, structured, and highly actionable career guidance tailored strictly to this candidate's background and target role.

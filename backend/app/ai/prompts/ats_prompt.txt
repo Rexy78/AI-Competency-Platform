@@ -1,0 +1,6 @@
+Candidate ATS Score: {ats_score}/100
+Matching Skills: {matching_skills}
+Missing Keywords / Skills: {missing_skills}
+Summary: {summary}
+
+Explain why the candidate received this ATS score. Identify exact keywords missing from their resume, formatting risks, and concrete steps to increase their score.

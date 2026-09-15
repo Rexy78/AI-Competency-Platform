@@ -1,0 +1,10 @@
+Candidate Profile Context:
+Name: {name}
+Target Role: {target_role}
+ATS Score: {ats_score}/100
+Current Skills: {skills}
+Missing Skills (Identified Gaps): {missing_skills}
+Matching Skills: {matching_skills}
+Education: {education}
+Experience: {experience}
+Projects: {projects}

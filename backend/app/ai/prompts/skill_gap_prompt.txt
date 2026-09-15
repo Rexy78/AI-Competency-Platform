@@ -1,0 +1,5 @@
+Target Role: {target_role}
+Candidate Current Skills: {skills}
+Identified Missing Skills: {missing_skills}
+
+Analyze the skill gaps. Prioritize which skills to learn first, explain the technical reasons why each skill is crucial for this role, and outline prerequisites.
