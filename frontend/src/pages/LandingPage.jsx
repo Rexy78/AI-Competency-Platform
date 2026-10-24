@@ -39,12 +39,6 @@ const LandingPage = () => {
               <ArrowRight className="w-4 h-4" />
             </Link>
 
-            <Link
-              to="/login"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-extrabold text-sm text-slate-300 bg-slate-900 border border-slate-800 hover:border-slate-700 hover:text-white transition-all flex items-center justify-center gap-2"
-            >
-              <span>Explore Demo Account</span>
-            </Link>
           </div>
 
           {/* Quick Metrics Banner */}

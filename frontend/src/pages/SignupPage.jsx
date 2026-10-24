@@ -62,7 +62,7 @@ const SignupPage = () => {
               <Sparkles className="w-6 h-6" />
             </div>
             <h2 className="text-2xl font-extrabold text-white tracking-tight">Create Account</h2>
-            <p className="text-xs text-slate-400">Join ResumeAI to evaluate your resume & track skill growth roadmaps</p>
+            <p className="text-xs text-slate-400">Join ResumeAnalyzer to evaluate your resume & track skill growth roadmaps</p>
           </div>
 
           {error && (

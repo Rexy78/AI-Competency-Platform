@@ -121,3 +121,72 @@ CREATE TABLE IF NOT EXISTS learning_roadmaps (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS interview_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    target_role VARCHAR(150) NOT NULL,
+    job_description_id INT DEFAULT NULL,
+    interview_type VARCHAR(100) DEFAULT 'technical',
+    difficulty VARCHAR(50) DEFAULT 'intermediate',
+    total_questions INT DEFAULT 10,
+    current_question INT DEFAULT 1,
+    status VARCHAR(50) DEFAULT 'active',
+    overall_score FLOAT DEFAULT 0,
+    started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME NULL,
+    session_data JSON DEFAULT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS interview_questions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id INT NOT NULL,
+    question_number INT NOT NULL,
+    question TEXT NOT NULL,
+    category VARCHAR(100),
+    difficulty VARCHAR(50),
+    topic VARCHAR(100),
+    FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS interview_answers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question_id INT NOT NULL,
+    session_id INT NOT NULL,
+    answer TEXT NOT NULL,
+    score FLOAT DEFAULT 0,
+    technical_score FLOAT DEFAULT 0,
+    clarity_score FLOAT DEFAULT 0,
+    completeness_score FLOAT DEFAULT 0,
+    relevance_score FLOAT DEFAULT 0,
+    feedback TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (question_id) REFERENCES interview_questions(id) ON DELETE CASCADE,
+    FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS interview_performance (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id INT NOT NULL,
+    topic VARCHAR(100) NOT NULL,
+    score FLOAT DEFAULT 0,
+    questions_attempted INT DEFAULT 0,
+    strength_level VARCHAR(50) DEFAULT 'moderate',
+    FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS interview_reports (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id INT NOT NULL,
+    overall_score FLOAT DEFAULT 0,
+    technical_score FLOAT DEFAULT 0,
+    communication_score FLOAT DEFAULT 0,
+    problem_solving_score FLOAT DEFAULT 0,
+    role_readiness FLOAT DEFAULT 0,
+    strengths JSON,
+    weaknesses JSON,
+    recommendations JSON,
+    learning_plan JSON,
+    FOREIGN KEY (session_id) REFERENCES interview_sessions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

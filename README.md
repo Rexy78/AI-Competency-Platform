@@ -1,6 +1,5 @@
-# ResumeAI – AI Resume Analyzer, Builder & Career Assistant
-
-![ResumeAI Platform](https://img.shields.io/badge/Stack-FastAPI%20%7C%20React%20%7C%20Tailwind%20%7C%20MySQL-6366f1?style=for-the-badge)
+# ResumeAnalyzer – AI Resume Analyzer, Builder & Career Assistant
+![ResumeAnalyzer Platform](https://img.shields.io/badge/Stack-FastAPI%20%7C%20React%20%7C%20Tailwind%20%7C%20MySQL-6366f1?style=for-the-badge)
 
 A full-stack, enterprise-grade AI career assistance platform designed to analyze resumes, calculate circular ATS scores, compute candidate skill gaps against 12+ benchmark tech roles, generate step-by-step learning roadmaps, recommend job fits, and build ATS-friendly resumes with live PDF export.
 
@@ -131,56 +130,64 @@ Resume-Analyzer/
 
 ## ⚡ Setup & Local Execution Guide
 
-### 1. Database Setup (MySQL)
-Execute `schema.sql` in your MySQL server instance to create the database and seed taxonomy data.
+### 1. Backend Setup (FastAPI)
+SQLite is used by default, so a separate database server is not required. To use MySQL instead, set `DATABASE_URL` in `backend/.env` to a valid MySQL connection URL and ensure the database and credentials are configured.
 
-**In PowerShell:**
-```powershell
-Get-Content schema.sql | mysql -u root -p
-```
-*or using CMD:*
-```cmd
-mysql -u root -p < schema.sql
-```
+Install Python dependencies from the repository root:
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
 
-### 2. Backend Setup (FastAPI)
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Start the FastAPI backend server:
-   ```bash
-   python -m uvicorn app.main:app --reload --port 8000
-   ```
-   *The backend server will be live at `http://localhost:8000` with Swagger docs at `http://localhost:8000/docs`.*
-
-### 3. Frontend Setup (React + Vite)
-1. Navigate to the frontend directory:
+### 3. Start the full application (FastAPI + React)
+From the repository root, install frontend dependencies and start both servers:
    ```bash
    cd frontend
-   ```
-2. Install Node dependencies:
-   ```bash
    npm install
-   ```
-3. Launch the Vite development server:
-   ```bash
    npm run dev
    ```
-   *The web application will be accessible at `http://localhost:5173`.*
+   The backend runs at `http://localhost:8000` (API docs: `http://localhost:8000/docs`) and the frontend at `http://localhost:5174`. Stop the command with Ctrl+C to stop both.
+
+   Install the backend dependencies before starting for the first time. The frontend proxies `/api` requests to `127.0.0.1:8000`, so the browser does not need a hard-coded localhost API URL. For a separately hosted production API, set `VITE_API_URL` to its origin; for a different local backend port, set `VITE_API_PROXY_TARGET` in the root `.env`.
 
 ---
 
-## 🔑 Demo Account Credentials
+---
 
-| Account Role | Email Address | Password |
-| :--- | :--- | :--- |
-| **System Administrator** | `admin@resumeai.com` | `admin123` |
-| **Demo Candidate** | `alex.developer@example.com` | `alex123` |
+## 🤖 AI Interview Preparation & Performance Analyzer
+
+ResumeAnalyzer now includes an adaptive AI interview preparation module designed to behave like a real interview coach rather than a static list of canned questions.
+
+### Core capabilities
+* Resume-aware, role-aware interview planning
+* Adaptive difficulty progression using AI-assisted evaluation
+* Structured performance tracking per topic
+* Weakness-practice mode focused on low-performing skills
+* Final performance report with strengths, weaknesses, and learning plan
+* Gemini backed answer evaluation and feedback generation
+* LangGraph-style workflow orchestration for interview state progression
+
+### Interview workflow
+1. Candidate selects target role, interview type, and difficulty
+2. AI planner analyzes resume, targets, and skill gaps
+3. Question generator creates relevant, non-random interview questions
+4. Candidate answers each question
+5. Evaluation agent scores technical correctness, completeness, clarity, and relevance
+6. Adaptive decision agent chooses the next question or weak-topic practice
+7. Final report summarizes overall score, readiness, strengths, and recommendations
+
+### API endpoints
+* `POST /api/interview/start`
+* `POST /api/interview/{session_id}/answer`
+* `GET /api/interview/{session_id}/current-question`
+* `GET /api/interview/{session_id}/performance`
+* `GET /api/interview/{session_id}/report`
+* `GET /api/interview/history`
+* `POST /api/interview/{session_id}/finish`
+* `POST /api/interview/weakness-practice`
+* `POST /api/interview/{session_id}/retake`
+
+### Environment variables
+Create a `.env` based on `.env.example` and store the Gemini API key securely.
 
 ---
 

@@ -12,7 +12,7 @@ from app.utils.auth import get_password_hash
 from sqlalchemy.orm import Session
 
 def init_database():
-    print("--- Initializing ResumeAI MySQL Database ---")
+    print("--- Initializing ResumeAnalyzer MySQL Database ---")
     
     # 1. Parse MySQL host, port, user, password from DATABASE_URL
     # mysql+pymysql://root:password@localhost:3306/resume_ai_db

@@ -158,3 +158,185 @@ class AIMessage(Base):
     role = Column(String(50), nullable=False)  # user | assistant
     message = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class InterviewSession(Base):
+    __tablename__ = "interview_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    target_role = Column(String(150), nullable=False)
+    job_description_id = Column(Integer, nullable=True)
+    interview_type = Column(String(100), default="technical")
+    difficulty = Column(String(50), default="intermediate")
+    total_questions = Column(Integer, default=10)
+    current_question = Column(Integer, default=1)
+    status = Column(String(50), default="active")
+    overall_score = Column(Float, default=0.0)
+    started_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    session_data = Column(JSON, default=dict)
+
+    user = relationship("User")
+    questions = relationship("InterviewQuestion", back_populates="session", cascade="all, delete-orphan")
+    reports = relationship("InterviewReport", back_populates="session", cascade="all, delete-orphan")
+
+
+class InterviewQuestion(Base):
+    __tablename__ = "interview_questions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("interview_sessions.id"), nullable=False)
+    question_number = Column(Integer, nullable=False)
+    question = Column(Text, nullable=False)
+    category = Column(String(100), nullable=True)
+    difficulty = Column(String(50), nullable=True)
+    topic = Column(String(100), nullable=True)
+
+    session = relationship("InterviewSession", back_populates="questions")
+    answers = relationship("InterviewAnswer", back_populates="question", cascade="all, delete-orphan")
+
+
+class InterviewAnswer(Base):
+    __tablename__ = "interview_answers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(Integer, ForeignKey("interview_questions.id"), nullable=False)
+    session_id = Column(Integer, ForeignKey("interview_sessions.id"), nullable=False)
+    answer = Column(Text, nullable=False)
+    score = Column(Float, default=0.0)
+    technical_score = Column(Float, default=0.0)
+    clarity_score = Column(Float, default=0.0)
+    completeness_score = Column(Float, default=0.0)
+    relevance_score = Column(Float, default=0.0)
+    feedback = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    question = relationship("InterviewQuestion", back_populates="answers")
+
+
+class InterviewPerformance(Base):
+    __tablename__ = "interview_performance"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("interview_sessions.id"), nullable=False)
+    topic = Column(String(100), nullable=False)
+    score = Column(Float, default=0.0)
+    questions_attempted = Column(Integer, default=0)
+    strength_level = Column(String(50), default="moderate")
+
+
+class InterviewReport(Base):
+    __tablename__ = "interview_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("interview_sessions.id"), nullable=False)
+    overall_score = Column(Float, default=0.0)
+    technical_score = Column(Float, default=0.0)
+    communication_score = Column(Float, default=0.0)
+    problem_solving_score = Column(Float, default=0.0)
+    role_readiness = Column(Float, default=0.0)
+    strengths = Column(JSON, default=list)
+    weaknesses = Column(JSON, default=list)
+    recommendations = Column(JSON, default=list)
+    learning_plan = Column(JSON, default=list)
+
+    session = relationship("InterviewSession", back_populates="reports")
+
+
+class PracticeAssessment(Base):
+    __tablename__ = "practice_assessments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String(150), default="Placement Assessment")
+    sections = Column(JSON, default=list)
+    total_questions = Column(Integer, default=0)
+    duration_minutes = Column(Integer, default=60)
+    status = Column(String(50), default="active")
+    score = Column(Float, default=0.0)
+    readiness = Column(Float, default=0.0)
+    result_json = Column(JSON, default=dict)
+    questions_json = Column(JSON, default=list)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+
+class PracticeAnswer(Base):
+    __tablename__ = "practice_answers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assessment_id = Column(Integer, ForeignKey("practice_assessments.id"), nullable=False)
+    question_id = Column(String(100), nullable=False)
+    question_category = Column(String(100), nullable=False)
+    selected_option = Column(String(20), nullable=True)
+    correct_option = Column(String(20), nullable=True)
+    is_correct = Column(Boolean, default=False)
+    marks = Column(Float, default=0.0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PracticeCodingProblem(Base):
+    __tablename__ = "practice_coding_problems"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    topic = Column(String(100), nullable=False)
+    difficulty = Column(String(50), default="Medium")
+    description = Column(Text, nullable=False)
+    input_format = Column(Text, nullable=True)
+    output_format = Column(Text, nullable=True)
+    constraints = Column(Text, nullable=True)
+    example_input = Column(Text, nullable=True)
+    example_output = Column(Text, nullable=True)
+    template = Column(Text, nullable=True)
+    tags = Column(JSON, default=list)
+    public_test_cases = Column(JSON, default=list)
+    hidden_test_cases = Column(JSON, default=list)
+    time_limit_ms = Column(Integer, default=1000)
+    memory_limit_mb = Column(Integer, default=256)
+    supported_languages = Column(JSON, default=list)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PracticeCodingSubmission(Base):
+    __tablename__ = "practice_coding_submissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    problem_id = Column(Integer, ForeignKey("practice_coding_problems.id"), nullable=False)
+    language = Column(String(50), default="Python")
+    code = Column(Text, nullable=False)
+    status = Column(String(50), default="pending")
+    score = Column(Float, default=0.0)
+    passed_cases = Column(Integer, default=0)
+    total_cases = Column(Integer, default=0)
+    execution_time_ms = Column(Integer, default=0)
+    output = Column(Text, nullable=True)
+    feedback = Column(Text, nullable=True)
+    submitted_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PracticeRecommendation(Base):
+    __tablename__ = "practice_recommendations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    category = Column(String(100), nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PracticePerformance(Base):
+    __tablename__ = "practice_performance"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    assessment_name = Column(String(150), nullable=False)
+    overall_score = Column(Float, default=0.0)
+    readiness = Column(Float, default=0.0)
+    section_scores = Column(JSON, default=dict)
+    coding_score = Column(Float, default=0.0)
+    tests_completed = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)

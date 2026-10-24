@@ -12,7 +12,9 @@ INTENT_MAP = {
     "skill_gap": [
         "skill gap", "missing skill", "missing skills", "gap", "gaps",
         "what skills am i missing", "what should i learn next", "what to learn",
-        "priority skill", "learn first"
+        "priority skill", "learn first", "which skills", "skills should i focus",
+        "skill to focus", "prioritize skills", "identify skill", "identify gap",
+        "my skill gaps", "skill gaps for"
     ],
     "job_role": [
         "job role", "roles", "target role", "suitable", "am i suitable",
@@ -75,6 +77,13 @@ class ContextManager:
             ctx["skills"] = prof.get("skills", [])
             ctx["missing_skills"] = prof.get("missing_skills", [])
             ctx["matching_skills"] = prof.get("matching_skills", [])
+            ctx["has_resume"] = prof.get("has_resume", False)
+            ctx["skill_gap_status"] = prof.get("skill_gap_status", "no_resume")
+
+        if intent in ("skill_gap", "learning"):
+            ctx["skill_match_percentage"] = prof.get("skill_match_percentage")
+            ctx["gap_matrix"] = prof.get("gap_matrix", [])
+            ctx["recommendations"] = prof.get("recommendations", [])
 
         if intent in ("resume_analysis", "resume_improvement"):
             ctx["summary"] = prof.get("summary", "")
@@ -129,6 +138,29 @@ class ContextManager:
         missing = context_data.get("missing_skills")
         if missing:
             parts.append(f"- Missing Skills (Gaps): {', '.join([str(s) for s in missing[:15]])}")
+
+        if context_data.get("skill_gap_status"):
+            parts.append(f"- Skill Gap Analysis Status: {context_data['skill_gap_status']}")
+
+        match_percentage = context_data.get("skill_match_percentage")
+        if match_percentage is not None:
+            parts.append(f"- Skill Match for Target Role: {match_percentage}%")
+
+        gap_matrix = context_data.get("gap_matrix")
+        if gap_matrix:
+            gap_details = [
+                f"{item['skill']} ({item['status']}, {item['priority']} priority)"
+                for item in gap_matrix[:15]
+            ]
+            parts.append(f"- Role Requirement Results: {', '.join(gap_details)}")
+
+        recommendations = context_data.get("recommendations")
+        if recommendations:
+            recommendation_details = [
+                f"{item['skill']}: {item['why']}"
+                for item in recommendations[:5]
+            ]
+            parts.append(f"- Gap Learning Recommendations: {'; '.join(recommendation_details)}")
 
         projects = context_data.get("projects")
         if projects:

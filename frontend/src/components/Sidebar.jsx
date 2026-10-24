@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   LayoutDashboard, FileText, BarChart3, Target, Briefcase, 
-  SearchCode, Wand2, FileCode, Map, Mic, User, LogOut, Sparkles 
+  SearchCode, Wand2, FileCode, Map, ClipboardCheck, User, LogOut, Sparkles, Gauge
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -15,13 +15,15 @@ const Sidebar = () => {
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Resume Analyzer', path: '/upload', icon: FileText },
     { name: 'ATS Analysis', path: '/analysis', icon: BarChart3 },
-    { name: 'Skill Gap Radar', path: '/skill-gap', icon: Target },
+    { name: 'Skill Gap', path: '/skill-gap', icon: Target },
     { name: 'Job Roles', path: '/job-recommendations', icon: Briefcase },
+    { name: 'Career Roadmap', path: '/roadmap', icon: Map },
     { name: 'Job Description', path: '/jd-analyzer', icon: SearchCode },
     { name: 'Resume Builder', path: '/builder', icon: FileCode },
-    { name: 'Career Roadmap', path: '/roadmap', icon: Map },
     { name: 'AI Resume Improver', path: '/improver', icon: Wand2 },
-    { name: 'Interview Preparation', path: '/interview', icon: Mic, badge: 'AI' },
+    { name: 'AI Chatbot', path: '/chatbot', icon: Sparkles },
+    { name: 'Practice Test', path: '/interview', icon: ClipboardCheck },
+    { name: 'Practice Test Performance', path: '/interview/performance', icon: Gauge },
     { name: 'Profile & Settings', path: '/profile', icon: User },
   ];
 
@@ -40,8 +42,7 @@ const Sidebar = () => {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-base tracking-tight text-white">Resume<span className="gradient-text">AI</span></span>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">GENAI</span>
+              <span className="font-extrabold text-base tracking-tight text-white">Resume<span className="gradient-text">Analyzer</span></span>
             </div>
             <p className="text-[10px] text-slate-400">Career Intelligence Platform</p>
           </div>

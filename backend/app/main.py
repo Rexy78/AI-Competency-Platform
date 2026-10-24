@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
-from app.routes import auth, resume, skills, jobs, roadmap, dashboard, admin, interview, projects, chatbot, chat
+from app.routes import auth, resume, skills, jobs, roadmap, dashboard, admin, interview, projects, chatbot, chat, practice
 from seed_data import seed_database
 
 # Create DB Tables on Startup
@@ -40,6 +40,7 @@ app.include_router(interview.router)
 app.include_router(projects.router)
 app.include_router(chatbot.router)
 app.include_router(chat.router)
+app.include_router(practice.router)
 
 @app.get("/")
 def root_endpoint():

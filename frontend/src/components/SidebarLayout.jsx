@@ -4,7 +4,7 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import { 
   LayoutDashboard, FileText, Target, Map, Briefcase, 
-  SearchCode, Wand2, FileCode, ShieldCheck, History 
+  SearchCode, Wand2, FileCode, ShieldCheck, History, Sparkles, ClipboardCheck, Gauge
 } from 'lucide-react';
 
 const SidebarLayout = ({ children }) => {
@@ -20,6 +20,9 @@ const SidebarLayout = ({ children }) => {
     { label: 'JD Matcher', path: '/jd-analyzer', icon: SearchCode },
     { label: 'AI Bullet Enhancer', path: '/improve', icon: Wand2 },
     { label: 'ATS Resume Builder', path: '/builder', icon: FileCode },
+    { label: 'AI Chatbot', path: '/chatbot', icon: Sparkles },
+    { label: 'Practice Test', path: '/interview', icon: ClipboardCheck },
+    { label: 'Practice Performance', path: '/interview/performance', icon: Gauge },
   ];
 
   return (

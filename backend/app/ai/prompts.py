@@ -182,12 +182,12 @@ Return ONLY valid JSON matching this schema:
 INTERVIEW_GENERATOR_PROMPT = """
 Candidate Resume Summary:
 {resume_summary}
-
+ 
 Extracted Skills:
 {skills}
-
+ 
 Target Role: {target_role}
-
+ 
 Generate between 15 and 20 interview questions tailored specifically to this candidate's resume and target role.
 Focus on the actual skills present in the resume, and prioritize technical, architecture, and behavioral questions that a recruiter or hiring manager would realistically ask.
 Do not repeat similar questions. Make them progressive from fundamentals to deeper system design and problem-solving.
@@ -205,12 +205,41 @@ Return ONLY valid JSON matching this schema:
 }}
 """
 
+TOPIC_ASSESSMENT_PROMPT = """
+Candidate Resume Summary:
+{resume_summary}
+
+Extracted Skills:
+{skills}
+
+Target Role: {target_role}
+
+Generate {question_count} multiple-choice assessment questions based strictly on the candidate's resume topics and target role.
+Each question should test a technical concept directly tied to the resume's actual skills or role requirements.
+Only return valid JSON.
+
+Schema:
+{{
+  "questions": [
+    {{
+      "id": 1,
+      "category": "Java",
+      "question": "Which JVM concept is most relevant when optimizing memory usage in a Java backend system?",
+      "options": ["Garbage Collection", "CSS selectors", "HTTP redirect rules", "SQL joins"],
+      "correct_option": 0,
+      "explanation": "Garbage Collection is a core Java memory-management concept for backend systems.",
+      "difficulty": "Intermediate"
+    }}
+  ]
+}}
+"""
+
 MOCK_INTERVIEW_EVALUATION_PROMPT = """
 Interview Question: {question}
 Candidate Answer: {answer}
-
+ 
 Evaluate the candidate's answer for technical correctness, clarity, completeness, and confidence.
-
+ 
 Return ONLY valid JSON matching this schema:
 {{
   "score": 85,

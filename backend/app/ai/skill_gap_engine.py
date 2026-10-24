@@ -21,7 +21,7 @@ def analyze_skill_gaps(user_skills: List[str], target_role: str = "Java Backend 
         else:
             status = "Missing"
             # High priority for core skills, medium/low for secondary
-            if req in ["Java", "Python", "JavaScript", "Spring Boot", "React", "Docker", "Machine Learning", "SQL"]:
+            if req in ["Java", "OOP", "Python", "JavaScript", "Spring Boot", "React", "Docker", "Machine Learning", "SQL"]:
                 priority = "High"
             elif req in ["REST API", "Hibernate", "Microservices", "PostgreSQL", "AWS", "Kubernetes"]:
                 priority = "Medium"

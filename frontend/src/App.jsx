@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -18,6 +19,11 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AIInterviewPage from './pages/AIInterviewPage';
 import AstraChatbotPage from './pages/AstraChatbotPage';
 import ProfilePage from './pages/ProfilePage';
+import InterviewSetupPage from './pages/InterviewSetupPage';
+import InterviewSessionPage from './pages/InterviewSessionPage';
+import InterviewResultPage from './pages/InterviewResultPage';
+import InterviewHistoryPage from './pages/InterviewHistoryPage';
+import InterviewPerformancePage from './pages/InterviewPerformancePage';
 import AstraButton from './components/AstraButton';
 
 // Protected Route Component
@@ -46,10 +52,15 @@ function AppRoutes() {
       <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
       <Route path="/improve" element={<ProtectedRoute><ResumeImprovementPage /></ProtectedRoute>} />
       <Route path="/improver" element={<ProtectedRoute><ResumeImprovementPage /></ProtectedRoute>} />
-      <Route path="/interview" element={<ProtectedRoute><AIInterviewPage /></ProtectedRoute>} />
+      <Route path="/interview" element={<ProtectedRoute><InterviewSetupPage /></ProtectedRoute>} />
+      <Route path="/interview/setup" element={<ProtectedRoute><InterviewSetupPage /></ProtectedRoute>} />
+      <Route path="/interview/session/:id" element={<ProtectedRoute><InterviewSessionPage /></ProtectedRoute>} />
+      <Route path="/interview/result/:id" element={<ProtectedRoute><InterviewResultPage /></ProtectedRoute>} />
+      <Route path="/interview/history" element={<ProtectedRoute><InterviewHistoryPage /></ProtectedRoute>} />
+      <Route path="/interview/performance" element={<ProtectedRoute><InterviewPerformancePage /></ProtectedRoute>} />
+      <Route path="/interview/practice" element={<ProtectedRoute><InterviewSetupPage /></ProtectedRoute>} />
       <Route path="/astra" element={<ProtectedRoute><AstraChatbotPage /></ProtectedRoute>} />
       <Route path="/chatbot" element={<ProtectedRoute><AstraChatbotPage /></ProtectedRoute>} />
-      <Route path="/profile text" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
 
@@ -61,11 +72,13 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AppRoutes />
-        <AstraButton />
-      </Router>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+          <AstraButton />
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

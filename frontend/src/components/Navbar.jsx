@@ -3,13 +3,16 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Sparkles, LayoutDashboard, FileText, Target, Map, Briefcase, 
-  SearchCode, Wand2, FileCode, LogOut, User, ShieldCheck, ChevronDown, Menu, X 
+  SearchCode, Wand2, FileCode, LogOut, User, ShieldCheck, ChevronDown, Menu, X,
+  ClipboardCheck, Gauge, Sun, Moon
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -17,6 +20,19 @@ const Navbar = () => {
     logout();
     navigate('/');
   };
+
+  const themeToggle = (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all"
+    >
+      {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+    </button>
+  );
 
   return (
     <nav className="sticky top-0 z-50 glass-card border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
@@ -29,8 +45,7 @@ const Navbar = () => {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-lg tracking-tight text-white">Resume<span className="gradient-text">AI</span></span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">PRO</span>
+                <span className="font-extrabold text-lg tracking-tight text-white">Resume<span className="gradient-text">Analyzer</span></span>
               </div>
               <p className="text-[10px] text-slate-400 hidden sm:block">AI Resume & Career Assistant</p>
             </div>
@@ -74,6 +89,19 @@ const Navbar = () => {
                 <FileCode className="w-4 h-4" />
                 <span>Resume Builder</span>
               </Link>
+
+              <Link
+                to="/interview"
+                className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+                  location.pathname === '/interview' || location.pathname.startsWith('/interview/')
+                    ? 'bg-violet-600/20 text-violet-400 border border-violet-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <ClipboardCheck className="w-4 h-4" />
+                <span>Practice Test</span>
+              </Link>
+              {themeToggle}
 
               {/* User Dropdown */}
               <div className="relative">
@@ -140,6 +168,7 @@ const Navbar = () => {
               >
                 Get Started Free
               </Link>
+              {themeToggle}
             </div>
           )}
 
@@ -158,6 +187,7 @@ const Navbar = () => {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-6 space-y-3">
+          {themeToggle}
           {isAuthenticated ? (
             <>
               <div className="px-3 py-2 bg-slate-800/60 rounded-xl border border-slate-700/60 mb-2">
@@ -169,6 +199,8 @@ const Navbar = () => {
               <Link to="/skill-gap" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800">Skill Gap Radar</Link>
               <Link to="/roadmap" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800">Career Roadmap</Link>
               <Link to="/builder" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800">Resume Builder</Link>
+              <Link to="/interview" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-semibold text-violet-300 hover:bg-slate-800">Practice Test</Link>
+              <Link to="/chatbot" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-xl text-sm font-semibold text-indigo-300 hover:bg-slate-800">AI Chatbot</Link>
               <button onClick={handleLogout} className="w-full text-left px-3 py-2 rounded-xl text-sm font-semibold text-rose-400 hover:bg-rose-500/10">Sign Out</button>
             </>
           ) : (

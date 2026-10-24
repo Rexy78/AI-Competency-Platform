@@ -1,26 +1,69 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import Footer from '../components/Footer';
 import api from '../services/api';
-import { Bot, Sparkles, Send, User, Loader2, MessageSquare, Zap } from 'lucide-react';
+import { Bot, Send, User, Loader2, Zap } from 'lucide-react';
 
 const AstraChatbotPage = () => {
   const [messages, setMessages] = useState([
     {
-      sender: 'Astra AI',
-      text: 'Hello! I am Astra, your GenAI Career Assistant. I have full context of your uploaded resume, target role, and skill gaps. How can I guide your career today?',
+      sender: 'AI Chatbot',
+      text: 'Hello! I can compare skills detected in your latest analyzed resume with a target role and suggest next steps. Choose a target role below, then ask me to identify your skill gaps.',
       timestamp: 'Just now'
     }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [targetRole, setTargetRole] = useState('Java Backend Developer');
+  const [targetRoles, setTargetRoles] = useState([]);
+  const [roleError, setRoleError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    const loadTargetRoles = async () => {
+      try {
+        const rolesResponse = await api.get('/chatbot/roles');
+        const roles = rolesResponse.data;
+        if (!Array.isArray(roles) || roles.length === 0) {
+          throw new Error('The chatbot did not return any target roles.');
+        }
+        if (!active) return;
+
+        setTargetRoles(roles);
+        if (!roles.includes(targetRole)) {
+          setTargetRole(roles[0]);
+        }
+
+        try {
+          const latestResponse = await api.get('/resume/latest');
+          const savedRole = latestResponse.data?.target_role;
+          if (active && roles.includes(savedRole)) {
+            setTargetRole(savedRole);
+          }
+        } catch (error) {
+          console.warn('Could not load the latest analyzed target role:', error);
+        }
+      } catch (error) {
+        console.error('Could not load chatbot target roles:', error);
+        if (active) {
+          setRoleError('Target roles could not be loaded. Refresh the page to retry.');
+        }
+      }
+    };
+
+    loadTargetRoles();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const quickPrompts = [
     'Which skills should I focus on for my target role?',
-    'Why is my ATS score low and how can I improve it?',
+    'How can I tailor my resume to a job description?',
     'Give me 5 interview questions based on my resume.',
-    'Ask me a technical interview question for my current profile.'
+    'Explain REST APIs for my target role.'
   ];
 
   const handleSendMessage = async (textToSend) => {
@@ -33,18 +76,26 @@ const AstraChatbotPage = () => {
     setLoading(true);
 
     try {
-      const res = await api.post('/chatbot/chat', { message: text.trim() });
+      const history = messages.slice(-10).map((message) => ({
+        role: message.sender === 'You' ? 'user' : 'assistant',
+        content: message.text.slice(-2000),
+      }));
+      const res = await api.post('/chatbot/chat', {
+        message: text.trim(),
+        target_role: targetRole,
+        history,
+      });
       const botMsg = {
-        sender: 'Astra AI',
-        text: res.data.reply || 'I am processing your career context. Continue building projects and refining key skills!',
+        sender: 'AI Chatbot',
+        text: res.data.reply || 'The assistant returned an empty response. Please try asking in a different way.',
         timestamp: 'Just now'
       };
       setMessages(prev => [...prev, botMsg]);
     } catch (err) {
       console.error(err);
       const botMsg = {
-        sender: 'Astra AI',
-        text: 'Based on your resume and skill gap analysis, I recommend focusing on Spring Boot, Docker, and REST API microservices to boost your ATS compatibility.',
+        sender: 'AI Chatbot',
+        text: 'I could not reach the chatbot service. Please check your connection and try again.',
         timestamp: 'Just now'
       };
       setMessages(prev => [...prev, botMsg]);
@@ -62,7 +113,7 @@ const AstraChatbotPage = () => {
 
         <main className="flex-1 p-6 md:p-8 space-y-6 flex flex-col h-[calc(100vh-80px)] overflow-hidden">
           {/* Header */}
-          <div className="glass-card rounded-3xl p-5 border border-slate-800/80 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 shadow-2xl flex-shrink-0">
+          <div className="chatbot-header glass-card rounded-3xl p-5 border border-slate-800/80 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 shadow-2xl flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl gradient-bg flex items-center justify-center text-white shadow-glow">
@@ -70,13 +121,34 @@ const AstraChatbotPage = () => {
                 </div>
                 <div>
                   <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-                    <span>Astra</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">GENAI ASSISTANT</span>
+                    <span>AI Chatbot</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">CAREER ASSISTANT</span>
                   </h1>
                   <p className="text-xs text-slate-400">Context-Aware AI Career & Resume Advisor</p>
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="glass-card rounded-2xl p-4 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center gap-3 flex-shrink-0">
+            <div className="flex-1">
+              <label htmlFor="chatbot-target-role" className="block text-xs font-bold text-slate-200 mb-1">
+                Analyze skill gaps for
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Results use your latest analyzed resume and this role's requirements.
+              </p>
+            </div>
+            <select
+              id="chatbot-target-role"
+              value={targetRole}
+              onChange={(event) => setTargetRole(event.target.value)}
+              disabled={targetRoles.length === 0}
+              className="w-full sm:w-72 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+            >
+              {targetRoles.map((role) => <option key={role} value={role}>{role}</option>)}
+            </select>
+            {roleError && <p role="alert" className="text-xs text-rose-400">{roleError}</p>}
           </div>
 
           {/* Quick Suggestions */}
@@ -98,7 +170,7 @@ const AstraChatbotPage = () => {
           {/* Chat Conversation Scroll Area */}
           <div className="flex-1 glass-card rounded-3xl p-6 border border-slate-800/80 overflow-y-auto space-y-4 custom-scrollbar">
             {messages.map((msg, idx) => {
-              const isBot = msg.sender === 'Astra AI';
+              const isBot = msg.sender === 'AI Chatbot';
               return (
                 <div key={idx} className={`flex items-start gap-3 ${isBot ? '' : 'flex-row-reverse'}`}>
                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${
@@ -124,7 +196,7 @@ const AstraChatbotPage = () => {
             {loading && (
               <div className="flex items-center gap-2 text-xs text-indigo-400 p-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Astra is analyzing your career profile...</span>
+                <span>AI Chatbot is analyzing your career profile...</span>
               </div>
             )}
           </div>
@@ -135,7 +207,7 @@ const AstraChatbotPage = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask Astra anything about your resume, skill gaps, or career roadmap..."
+              placeholder="Ask the AI chatbot about your resume, skill gaps, or career roadmap..."
               className="flex-1 px-5 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xl"
             />
             <button
@@ -143,7 +215,7 @@ const AstraChatbotPage = () => {
               disabled={loading || !input.trim()}
               className="px-6 py-3 rounded-2xl text-xs font-extrabold text-white gradient-bg shadow-glow hover:opacity-95 transition-all flex items-center gap-2"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /><span>Ask Astra</span></>}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /><span>Send</span></>}
             </button>
           </form>
         </main>

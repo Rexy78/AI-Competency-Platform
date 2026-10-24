@@ -130,7 +130,7 @@ const DashboardPage = () => {
         {/* Quick Actions Grid */}
         <div className="glass-card rounded-3xl p-8 border border-slate-800/80 shadow-2xl space-y-4">
           <h3 className="text-base font-bold text-white">Quick Platform Actions</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <Link to="/upload" className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/40 hover:bg-indigo-900/50 transition-all text-center space-y-2 group">
               <div className="w-10 h-10 rounded-xl gradient-bg text-white flex items-center justify-center mx-auto group-hover:scale-105 transition-transform shadow-glow">
                 <FileText className="w-5 h-5" />
@@ -164,6 +164,13 @@ const DashboardPage = () => {
                 <SearchCode className="w-5 h-5" />
               </div>
               <span className="block text-xs font-bold text-white">Match Job Description</span>
+            </Link>
+
+            <Link to="/interview" className="p-4 rounded-2xl bg-violet-950/40 border border-violet-800/40 hover:bg-violet-900/50 transition-all text-center space-y-2 group">
+              <div className="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center mx-auto group-hover:scale-105 transition-transform">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <span className="block text-xs font-bold text-white">Practice Test</span>
             </Link>
           </div>
         </div>

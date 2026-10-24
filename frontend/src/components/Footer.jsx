@@ -49,7 +49,7 @@ const Footer = () => {
         </div>
 
         <div className="pt-8 border-t border-slate-800 text-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} ResumeAI. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ResumeAnalyzer. All rights reserved.</p>
           <p className="flex items-center gap-1 text-slate-500">
             Built with <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" /> for Final-Year CSE & Career Success.
           </p>

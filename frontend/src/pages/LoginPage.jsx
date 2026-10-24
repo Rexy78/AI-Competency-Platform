@@ -39,7 +39,7 @@ const LoginPage = () => {
             <div className="w-12 h-12 rounded-2xl gradient-bg flex items-center justify-center text-white mx-auto shadow-glow">
               <Sparkles className="w-6 h-6" />
             </div>
-            <h2 className="text-2xl font-extrabold text-white tracking-tight">Sign In to ResumeAI</h2>
+            <h2 className="text-2xl font-extrabold text-white tracking-tight">Sign In to ResumeAnalyzer</h2>
             <p className="text-xs text-slate-400">Enter your credentials to access your resume evaluation dashboard</p>
           </div>
 

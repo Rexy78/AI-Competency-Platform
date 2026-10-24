@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Any, Dict, Iterator, List, Optional
 from app.ai.gemini_client import get_gemini_client
 from app.ai.prompts import ASTRA_CHATBOT_SYSTEM_PROMPT
@@ -82,6 +83,9 @@ Respond in a warm, professional, encouraging, and highly specific tone as Astra,
 - If something is missing from their profile, state honestly that it was not detected in their uploaded resume.
 - Prioritize actionable steps with clear technical rationale.
 - Use markdown formatting with bullet points and bold highlights for readability.
+- Answer the candidate's latest message directly. Use conversation history for continuity, and do not repeat an earlier answer verbatim; add new, question-specific guidance.
+- For skill-gap questions, use only the provided Skill Gap Analysis Status, Skill Match, Role Requirement Results, and Gap Learning Recommendations. Do not invent or infer missing skills.
+- If the status is no_resume, ask the candidate to upload and analyze a resume. If it is no_detected_skills, explain that no skills were detected and ask them to check or re-upload the resume. Only present gaps when the status is analyzed.
 """
 
 
@@ -90,97 +94,154 @@ def _generate_fallback_response(
     context_pkg: Dict[str, Any],
     rag_context: str
 ) -> str:
-    """High-intelligence personalized fallback generator when Gemini API key is not configured."""
+    """Generate a grounded, question-specific reply when Gemini is unavailable."""
     candidate = context_pkg.get("candidate_data", {})
     intent = context_pkg.get("intent", "general_career")
 
-    name = candidate.get("name", "Candidate")
     target_role = candidate.get("target_role", "Software Engineer")
-    skills = candidate.get("skills", ["Java", "SQL", "Git"])
-    missing_skills = candidate.get("missing_skills", ["Spring Boot", "Docker", "REST API", "AWS"])
-    ats_score = candidate.get("ats_score", 78)
-
-    skills_str = ", ".join(str(s) for s in skills[:6]) or "fundamental software skills"
-    missing_str = ", ".join(str(s) for s in missing_skills[:4]) or "modern cloud and backend frameworks"
-    first_missing = missing_skills[0] if missing_skills else "Spring Boot"
+    skills = candidate.get("skills") or []
+    missing_skills = candidate.get("missing_skills") or []
+    skills_str = ", ".join(str(skill) for skill in skills[:6]) or "No analyzed resume skills are available yet."
+    missing_str = ", ".join(str(skill) for skill in missing_skills[:4])
+    question = user_message.strip()
 
     if intent == "ats":
-        return f"""### 📊 ATS Score Analysis for {name}
+        score = candidate.get("ats_score") or 0
+        if score:
+            return (
+                f"Your latest analyzed ATS score is **{score}/100** for **{target_role}**. "
+                f"Your detected skills include {skills_str}. "
+                "To improve the match, compare your resume with the exact job description, "
+                "use its relevant terminology where it truthfully describes your experience, "
+                "and quantify outcomes in experience and project bullets. "
+                "I don't have a score breakdown here, so share the target job description "
+                "or analysis report if you'd like a more specific diagnosis."
+            )
+        return (
+            "I don't have an analyzed ATS score available for your profile yet, so I can't "
+            "diagnose a specific score. Upload and analyze your resume first. In the meantime, "
+            "use a simple single-column layout, standard section headings, and relevant job-description "
+            "keywords that accurately reflect your experience."
+        )
 
-Your current resume achieved an **ATS score of {ats_score}/100** for the **{target_role}** benchmark.
+    if intent in ("skill_gap", "learning"):
+        gap_status = candidate.get("skill_gap_status", "no_resume")
+        if gap_status == "no_resume":
+            return (
+                "I can't identify your personal skill gaps yet because I don't have an analyzed resume "
+                "for your account. Upload your resume first, then choose a target role so I can compare "
+                "your detected skills against its requirements. You can also paste your skills here "
+                "for a general comparison."
+            )
+        if gap_status == "no_detected_skills":
+            return (
+                f"I couldn't detect skills in the uploaded resume, so I can't reliably identify gaps "
+                f"for **{target_role}**. Please check that the resume text is readable, then re-upload "
+                "or paste your skills here. I won't label unverified skills as missing."
+            )
+        if gap_status == "analyzed":
+            gap_matrix = candidate.get("gap_matrix") or []
+            matched = [item["skill"] for item in gap_matrix if item["status"] == "Available"]
+            missing_items = [item for item in gap_matrix if item["status"] == "Missing"]
+            matched_str = ", ".join(matched) or "none of the benchmark skills were detected"
+            if not missing_items:
+                return (
+                    f"Your analyzed resume matches all benchmark skills for **{target_role}** "
+                    f"({candidate.get('skill_match_percentage', 0)}% match). Detected skills: "
+                    f"{matched_str}. Keep these skills clearly supported by project or work examples."
+                )
 
-**Why this score was awarded:**
-1. **Skill Coverage**: You have validated strength in **{skills_str}**.
-2. **Missing Keywords**: Recruiter parsing engines look for high-frequency competencies such as **{missing_str}**, which were either absent or insufficiently highlighted in your experience bullets.
-3. **Action Verb Impact**: Ensure every project and job bullet begins with a strong quantifiable action verb (e.g., *"Architected RESTful microservices reducing latency by 35%"*).
+            missing_summary = ", ".join(
+                f"{item['skill']} ({item['priority']} priority)" for item in missing_items
+            )
+            recommendation_by_skill = {
+                item["skill"]: item for item in candidate.get("recommendations", [])
+            }
+            first_missing = missing_items[0]["skill"]
+            recommendation = recommendation_by_skill.get(first_missing)
+            next_step = (
+                recommendation["next_steps"][0]
+                if recommendation and recommendation.get("next_steps")
+                else f"Build a small project that demonstrates {first_missing}."
+            )
+            return (
+                f"### Skill-gap analysis for {target_role}\n\n"
+                f"**Role match: {candidate.get('skill_match_percentage', 0)}%**\n\n"
+                f"**Skills detected:** {matched_str}.\n\n"
+                f"**Gaps, by priority:** {missing_summary}.\n\n"
+                f"**Recommended first step — {first_missing}:** {next_step}\n\n"
+                "These results compare skills detected in your latest analyzed resume with the "
+                "selected role's requirements. Tell me which gap you want to work on and I can "
+                "outline a focused learning plan."
+            )
 
-**Recommended Next Step:**
-Add targeted keywords from **{missing_str}** into your project descriptions, and ensure your resume uses a clean single-column ATS-friendly layout."""
+    if intent == "interview":
+        primary_skill = str(skills[0]) if skills else "a technology from your target role"
+        questions = [
+            f"Describe a project where you used {primary_skill}. What trade-off did you make?",
+            f"How would you test a production feature built with {primary_skill}?",
+            f"Tell me about a technical issue you would investigate first if a service using {primary_skill} became slow.",
+            f"How would you explain the main limitation of {primary_skill} to a teammate?",
+            f"What would you improve in a project using {primary_skill} if you had another week?",
+        ]
+        if re.search(r"\b(5|five|list|some|questions)\b", question.lower()):
+            return "Here are five practice questions for a **" + target_role + "** interview:\n\n" + "\n".join(
+                f"{index}. {prompt}" for index, prompt in enumerate(questions, 1)
+            ) + "\n\nAnswer one and I can give feedback on its clarity, technical depth, and structure."
+        return (
+            f"Let's practice for a **{target_role}** role. **Question:** {questions[0]} "
+            "Answer with the situation, your specific actions, and the result. I'll then give "
+            "feedback and a follow-up question."
+        )
 
-    elif intent in ("skill_gap", "learning"):
-        return f"""### 🎯 Personalized Learning Recommendations
-
-Based on your resume, you have solid foundations in **{skills_str}**. Your target role is **{target_role}**.
-
-Your highest-priority missing skill is **{first_missing}**.
-
-**Recommended Step-by-Step Path:**
-1. **{first_missing} Fundamentals**: Learn core architecture, dependency injection, and component configuration.
-2. **RESTful APIs**: Build end-to-end CRUD services with validation and structured exception handling.
-3. **Database Integration**: Connect JPA / Hibernate with MySQL or PostgreSQL for persistence.
-4. **Containerization with Docker**: Containerize your application with a multi-stage Dockerfile and test locally.
-
-*Mastering {first_missing} will bridge your primary skill gap and boost your role match percentage significantly!*"""
-
-    elif intent == "interview":
-        return f"""### 🎤 Mock Interview Practice for {target_role}
-
-Here is a targeted technical interview question based on your profile:
-
-> **Question:**
-> *"In your backend projects using {skills_str.split(',')[0] if skills else 'Java'}, how do you design RESTful endpoints for high scalability, and how do you prevent common database query bottlenecks such as the N+1 problem?"*
-
-**Preparation Tip:**
-Structure your response using the **STAR Method** (Situation, Task, Action, Result) or discuss architectural trade-offs between lazy loading vs `JOIN FETCH`.
-
-Would you like to provide your answer so I can evaluate your technical accuracy and clarity?"""
-
-    elif intent == "technical_question":
-        return f"""### 💡 Technical Explanation
-
-Here is a clear breakdown relevant to modern **{target_role}** ecosystems:
-
-A **REST API (Representational State Transfer)** is an architectural style for network communications using standard HTTP protocols (`GET`, `POST`, `PUT`, `DELETE`).
-
-**How It Connects to Your Stack:**
-- **Language**: {skills_str.split(',')[0] if skills else 'Java / Python'}
-- **Framework**: {first_missing} creates REST controllers to serve JSON payloads to web/mobile clients.
-- **Database**: The API queries your database via an ORM and returns structured data.
-
-*Pro-Tip: Ensure your REST APIs return appropriate HTTP status codes (`200 OK`, `201 Created`, `400 Bad Request`, `404 Not Found`).*"""
+    if intent == "technical_question":
+        topic_match = re.search(r"\b(?:what is|explain|define|how does|how do i use)\s+(.+?)(?:\?|$)", question, re.I)
+        topic = topic_match.group(1).strip(" .") if topic_match else question.rstrip("?. ")
+        if rag_context.strip():
+            return (
+                f"Here is the relevant reference for **{topic}**:\n\n{rag_context[:900].strip()}\n\n"
+                "Tell me which part you'd like me to explain with an example."
+            )
+        return (
+            f"I can help explain **{topic}**, but I don't have a matching knowledge-base reference "
+            "available for this query right now. Tell me your experience level and whether you want "
+            "a conceptual explanation, code example, or interview-style answer."
+        )
 
     elif intent == "job_role":
-        return f"""### 💼 Career Suitability for {target_role}
+        return (
+            f"For a **{target_role}** role, your detected skills are {skills_str}. "
+            f"{'The analyzed gaps are ' + missing_str + '.' if missing_str else 'I do not have analyzed skill gaps yet.'} "
+            "Compare these against a specific job posting and look for evidence in your projects "
+            "that demonstrates each requirement. Share a posting and I can help assess the match."
+        )
 
-Based on your extracted skills (**{skills_str}**), you have strong core competence for entry-to-mid level software engineering positions.
+    if intent in ("resume_analysis", "resume_improvement"):
+        summary = candidate.get("summary")
+        if summary:
+            return (
+                f"Your profile summary is: {summary} For the request **“{question}”**, "
+                "I can give a more precise review if you share the resume section or bullet you "
+                "want to improve. I won't invent experience or metrics."
+            )
+        return (
+            f"I don't have analyzed resume details to review for **“{question}”** yet. "
+            "Upload and analyze your resume, or paste the specific bullet/section here. "
+            "I can then suggest a clearer, impact-focused rewrite without adding unsupported claims."
+        )
 
-To be fully competitive for senior **{target_role}** openings:
-- Bridge your identified skill gaps: **{missing_str}**.
-- Highlight production metrics in your past projects.
-- Include a deployed live demo link or GitHub repository showcasing containerized microservices."""
-
-    else:
-        return f"""Hello! As **Astra**, your AI Career Assistant, I have analyzed your resume profile for the **{target_role}** role.
-
-- **ATS Compatibility**: {ats_score}/100
-- **Strong Skills**: {skills_str}
-- **High-Priority Gaps**: {missing_str}
-
-Feel free to ask me anything about:
-- Improving your ATS score and resume bullets
-- Step-by-step learning roadmap for **{first_missing}**
-- Practicing mock interview questions
-- Technical concept explanations"""
+    previous_reply = next(
+        (line.removeprefix("Astra: ").strip() for line in reversed(context_pkg.get("history", "").splitlines())
+         if line.startswith("Astra: ")),
+        None,
+    )
+    continuation = " Building on our conversation, " if previous_reply else ""
+    return (
+        f"You asked: **{question}**.{continuation}I can tailor the answer to your **{target_role}** goal, "
+        f"but I only have these analyzed skills available: {skills_str} "
+        "Tell me the specific outcome you want—an explanation, a step-by-step plan, or feedback "
+        "on a resume section—and I'll focus the response."
+    )
 
 
 def chat_with_astra(
