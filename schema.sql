@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS resume_ai_db;
-USE resume_ai_db;
+CREATE DATABASE IF NOT EXISTS resume_analyzer CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE resume_analyzer;
 
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,

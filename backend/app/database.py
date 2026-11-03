@@ -1,5 +1,6 @@
 import logging
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import settings
@@ -12,14 +13,23 @@ connect_args = {}
 try:
     if db_url.startswith("sqlite"):
         connect_args = {"check_same_thread": False}
-    
+
     engine = create_engine(db_url, connect_args=connect_args)
-    # Test connection
     with engine.connect() as conn:
         pass
-    logger.info(f"Connected to database: {db_url}")
+    logger.info("Connected to database: %s", make_url(db_url).render_as_string(hide_password=True))
 except Exception as e:
-    logger.warning(f"Failed to connect to primary database ({db_url}): {e}. Falling back to SQLite.")
+    if not db_url.startswith("sqlite"):
+        raise RuntimeError(
+            f"Could not connect to configured database "
+            f"{make_url(db_url).render_as_string(hide_password=True)}"
+        ) from e
+
+    logger.warning(
+        "Failed to connect to primary database (%s): %s. Falling back to SQLite.",
+        make_url(db_url).render_as_string(hide_password=True),
+        e,
+    )
     db_url = settings.SQLITE_FALLBACK_URL
     connect_args = {"check_same_thread": False}
     engine = create_engine(db_url, connect_args=connect_args)

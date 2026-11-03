@@ -131,7 +131,21 @@ Resume-Analyzer/
 ## ⚡ Setup & Local Execution Guide
 
 ### 1. Backend Setup (FastAPI)
-SQLite is used by default, so a separate database server is not required. To use MySQL instead, set `DATABASE_URL` in `backend/.env` to a valid MySQL connection URL and ensure the database and credentials are configured.
+MySQL is used by default. Create the database before starting the backend:
+
+   ```sql
+   CREATE DATABASE resume_analyzer CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+Copy `.env.example` to `backend/.env` if it does not exist, then set `DATABASE_URL` with your local MySQL username, password, host, port, and database name. The example uses `root` on `127.0.0.1:3306`; replace `YOUR_MYSQL_PASSWORD` locally. The backend creates its tables on startup and will stop with an error if the configured MySQL connection fails rather than silently switching to SQLite.
+
+To copy existing data from `backend/resume_ai.db`, first configure MySQL and create the database, then run this once from the `backend` directory before starting the app:
+
+   ```bash
+   python migrate_sqlite_to_mysql.py
+   ```
+
+The migration refuses to copy into a MySQL database that already contains rows in the app tables, to prevent duplicate or conflicting data. Keep the SQLite file as a backup until you have verified the migrated data.
 
 Install Python dependencies from the repository root:
    ```bash

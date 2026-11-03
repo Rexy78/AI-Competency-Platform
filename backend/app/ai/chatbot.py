@@ -10,6 +10,19 @@ from app.ai.context_manager import ContextManager
 logger = logging.getLogger("resume_ai")
 
 
+def _coerce_string_list(value: Any) -> List[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        if not value.strip():
+            return []
+        parts = [part.strip() for part in re.split(r"[,;\n|]", value) if part.strip()]
+        return parts or [value.strip()]
+    if isinstance(value, (list, tuple, set)):
+        return [str(item).strip() for item in value if str(item).strip()]
+    return [str(value).strip()] if str(value).strip() else []
+
+
 def normalize_resume_context(raw_resume: Optional[Dict[str, Any]], fallback_role: str = "Software Engineer") -> Dict[str, Any]:
     """Normalize resume data from multiple parser shapes into a consistent Astra context object."""
     data = raw_resume or {}
@@ -23,9 +36,9 @@ def normalize_resume_context(raw_resume: Optional[Dict[str, Any]], fallback_role
         or fallback_role
     )
 
-    skills = data.get("all_skills") or data.get("skills") or []
-    missing_skills = data.get("missing_skills") or data.get("skill_gaps") or []
-    matching_skills = data.get("matching_skills") or []
+    skills = _coerce_string_list(data.get("all_skills") or data.get("skills"))
+    missing_skills = _coerce_string_list(data.get("missing_skills") or data.get("skill_gaps"))
+    matching_skills = _coerce_string_list(data.get("matching_skills"))
     ats_score = data.get("ats_score")
     if ats_score is None:
         ats_score = data.get("ats") or data.get("score") or 0
@@ -34,22 +47,21 @@ def normalize_resume_context(raw_resume: Optional[Dict[str, Any]], fallback_role
         "name": data.get("name") or personal_info.get("name") or "Candidate",
         "target_role": target_role,
         "summary": data.get("summary") or sections.get("summary") or personal_info.get("summary") or "",
-        "skills": [str(skill) for skill in skills],
-        "missing_skills": [str(skill) for skill in missing_skills],
-        "matching_skills": [str(skill) for skill in matching_skills],
+        "skills": skills,
+        "missing_skills": missing_skills,
+        "matching_skills": matching_skills,
         "ats_score": float(ats_score) if isinstance(ats_score, (int, float)) else 0,
-        "experience": data.get("experience") or sections.get("experience") or [],
-        "projects": data.get("projects") or sections.get("projects") or [],
-        "education": data.get("education") or sections.get("education") or [],
+        "experience": _coerce_string_list(data.get("experience") or sections.get("experience")),
+        "projects": _coerce_string_list(data.get("projects") or sections.get("projects")),
+        "education": _coerce_string_list(data.get("education") or sections.get("education")),
     }
 
     if not normalized["skills"] and isinstance(data.get("skills_by_category"), dict):
         for item in data["skills_by_category"].values():
-            if isinstance(item, list):
-                normalized["skills"].extend(str(skill) for skill in item)
+            normalized["skills"].extend(_coerce_string_list(item))
 
     if not normalized["missing_skills"] and isinstance(data.get("missing_skills_detail"), list):
-        normalized["missing_skills"] = [str(skill) for skill in data["missing_skills_detail"]]
+        normalized["missing_skills"] = _coerce_string_list(data["missing_skills_detail"])
 
     return normalized
 
