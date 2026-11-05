@@ -35,6 +35,14 @@ SKILL_TAXONOMY = {
     ]
 }
 
+SKILL_ALIASES = {
+    "OOP": ["oop", "oops", "object oriented programming", "object-oriented programming"],
+    "REST API": ["restful api", "restful apis"],
+    "SQL": ["mysql"],
+    "AWS": ["amazon web services"],
+    "GCP": ["google cloud platform"],
+}
+
 # Standard Role Requirements Matrix for Target Roles & Skill Gap Engine
 JOB_ROLE_REQUIREMENTS = {
     "Java Backend Developer": {

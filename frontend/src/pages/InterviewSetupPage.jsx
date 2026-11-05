@@ -25,7 +25,6 @@ const InterviewSetupPage = () => {
   const [interviewType, setInterviewType] = useState('full-practice');
   const [selectedSections, setSelectedSections] = useState(defaultSections);
   const [difficulty, setDifficulty] = useState('Intermediate');
-  const [questionCount, setQuestionCount] = useState(62);
   const [codingLanguage, setCodingLanguage] = useState('Java');
   const [jobDescription, setJobDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -92,12 +91,11 @@ const InterviewSetupPage = () => {
         ? [...selectedSections.filter((section) => section !== 'coding'), 'coding']
         : (selectedSections.length ? selectedSections : [interviewType]);
       const finalType = interviewType === 'full-practice' ? 'full-practice' : (finalSections.length > 1 ? 'mixed-practice' : finalSections[0]);
-      const balancedCount = finalSections.includes('coding') ? 62 : 60;
       const payload = {
         target_role: targetRole,
         interview_type: finalType,
         difficulty,
-        question_count: Number(questionCount) || balancedCount,
+        question_count: 62,
         job_description: jobDescription || null,
         coding_language: finalSections.includes('coding') ? codingLanguage : null,
         sections: finalSections,
@@ -181,19 +179,11 @@ const InterviewSetupPage = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-2">Difficulty</label>
-                    <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="w-full px-3 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm">
-                      {difficultyLevels.map((level) => <option key={level} value={level}>{level}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-2">Number of Questions</label>
-                    <select value={questionCount} onChange={(e) => setQuestionCount(Number(e.target.value))} className="w-full px-3 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm">
-                      {[20, 40, 62, 80].map((count) => <option key={count} value={count}>{count}</option>)}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-2">Difficulty</label>
+                  <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="w-full px-3 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm">
+                    {difficultyLevels.map((level) => <option key={level} value={level}>{level}</option>)}
+                  </select>
                 </div>
 
                 {(interviewType === 'coding' || selectedSections.includes('coding')) && (

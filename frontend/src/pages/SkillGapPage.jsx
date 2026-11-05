@@ -10,6 +10,7 @@ const SkillGapPage = () => {
   const [targetRole, setTargetRole] = useState('Java Backend Developer');
   const [gapData, setGapData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const targetRolesList = [
     'Java Backend Developer',
@@ -28,17 +29,20 @@ const SkillGapPage = () => {
 
   const fetchSkillGaps = (role) => {
     setLoading(true);
+    setError('');
     api.get(`/skills/gaps?target_role=${encodeURIComponent(role)}`)
       .then(res => {
         if (res.data && res.data.gap_matrix) {
           setGapData(res.data);
         } else {
-          setGapData(getFallbackGapData(role));
+          setGapData(null);
+          setError('Skill gap analysis returned no results. Please analyze your resume again.');
         }
         setLoading(false);
       })
       .catch(() => {
-        setGapData(getFallbackGapData(role));
+        setGapData(null);
+        setError('Unable to load skill gap analysis. Check your connection and try again.');
         setLoading(false);
       });
   };
@@ -46,47 +50,6 @@ const SkillGapPage = () => {
   useEffect(() => {
     fetchSkillGaps(targetRole);
   }, [targetRole]);
-
-  const getFallbackGapData = (role) => {
-    return {
-      target_role: role,
-      skill_match_percentage: 68,
-      radar_data: [
-        { subject: 'Programming', A: 85, B: 90, fullMark: 100 },
-        { subject: 'Backend', A: 65, B: 85, fullMark: 100 },
-        { subject: 'Database', A: 70, B: 80, fullMark: 100 },
-        { subject: 'Cloud', A: 50, B: 75, fullMark: 100 },
-        { subject: 'DevOps', A: 45, B: 75, fullMark: 100 },
-        { subject: 'Soft Skills', A: 80, B: 70, fullMark: 100 }
-      ],
-      gap_matrix: [
-        { skill: 'Java', category: 'Programming', status: 'Available', priority: 'Low' },
-        { skill: 'Spring Boot', category: 'Backend', status: 'Missing', priority: 'High' },
-        { skill: 'REST API', category: 'Backend', status: 'Available', priority: 'Low' },
-        { skill: 'Microservices', category: 'Backend', status: 'Missing', priority: 'High' },
-        { skill: 'SQL / PostgreSQL', category: 'Database', status: 'Available', priority: 'Low' },
-        { skill: 'Docker', category: 'DevOps', status: 'Missing', priority: 'Medium' },
-        { skill: 'Kubernetes', category: 'Cloud', status: 'Missing', priority: 'Medium' },
-        { skill: 'Git / GitHub', category: 'DevOps', status: 'Available', priority: 'Low' }
-      ],
-      recommendations: [
-        {
-          skill: 'Spring Boot & Microservices',
-          priority: 'High',
-          why: 'Spring Boot is the standard framework for production Java backend engineering and REST microservice architectures.',
-          prerequisites: ['Java OOP', 'Collections', 'Maven/Gradle'],
-          next_steps: ['Build REST APIs with Spring Web', 'Integrate Spring Data JPA', 'Containerize with Docker']
-        },
-        {
-          skill: 'Docker Containerization',
-          priority: 'Medium',
-          why: 'Packaging applications into Docker containers ensures consistent deployments across local and cloud environments.',
-          prerequisites: ['Linux Commands', 'Basic CLI'],
-          next_steps: ['Write Dockerfiles', 'Use Docker Compose for multi-container apps']
-        }
-      ]
-    };
-  };
 
   const availableCount = gapData?.gap_matrix?.filter(i => i.status === 'Available').length || 0;
   const missingCount = gapData?.gap_matrix?.filter(i => i.status === 'Missing').length || 0;
@@ -128,6 +91,11 @@ const SkillGapPage = () => {
             <div className="w-10 h-10 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin mx-auto"></div>
             <p className="text-xs font-bold text-slate-300">Evaluating role requirements & benchmark skill gaps for {targetRole}...</p>
           </div>
+        ) : error ? (
+          <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-800 text-rose-300 text-xs flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-400" />
+            <span>{error}</span>
+          </div>
         ) : (
           <>
             {/* Score & Radar Grid */}
@@ -141,14 +109,14 @@ const SkillGapPage = () => {
                 <div className="space-y-1">
                   <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 block">Benchmark Skill Match</span>
                   <div className="text-5xl font-extrabold text-white tracking-tight">
-                    {gapData?.skill_match_percentage || 68}<span className="text-lg text-slate-500 font-bold">%</span>
+                    {gapData?.skill_match_percentage ?? 0}<span className="text-lg text-slate-500 font-bold">%</span>
                   </div>
                 </div>
 
                 <div className="w-full bg-slate-900 rounded-full h-3 max-w-xs overflow-hidden p-0.5 border border-slate-800">
                   <div
                     className="gradient-bg h-full rounded-full transition-all duration-1000"
-                    style={{ width: `${gapData?.skill_match_percentage || 68}%` }}
+                    style={{ width: `${gapData?.skill_match_percentage ?? 0}%` }}
                   ></div>
                 </div>
 

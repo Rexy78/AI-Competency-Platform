@@ -5,6 +5,7 @@ from app.database import get_db
 from app.models.models import User, Resume, SkillGap, Recommendation
 from app.utils.auth import get_current_user
 from app.ai.taxonomy import SKILL_TAXONOMY, JOB_ROLE_REQUIREMENTS
+from app.ai.parser import extract_resume_skills
 from app.ai.skill_gap_engine import analyze_skill_gaps
 
 router = APIRouter(prefix="/api/skills", tags=["Skills & Gap Analysis"])
@@ -22,7 +23,7 @@ def get_skill_gaps(
     latest_resume = db.query(Resume).filter(Resume.user_id == current_user.id).order_by(Resume.created_at.desc()).first()
     user_skills = []
     if latest_resume and latest_resume.parsed_json:
-        user_skills = latest_resume.parsed_json.get("all_skills", [])
+        user_skills = extract_resume_skills(latest_resume.parsed_json)
     else:
         # Default sample skills if user hasn't uploaded yet
         user_skills = ["Java", "SQL", "Git", "HTML", "CSS", "JavaScript"]

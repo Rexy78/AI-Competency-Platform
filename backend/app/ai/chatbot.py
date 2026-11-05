@@ -6,6 +6,7 @@ from app.ai.gemini_client import get_gemini_client
 from app.ai.prompts import ASTRA_CHATBOT_SYSTEM_PROMPT
 from app.ai.rag_engine import rag_engine
 from app.ai.context_manager import ContextManager
+from app.ai.parser import extract_resume_skills
 
 logger = logging.getLogger("resume_ai")
 
@@ -36,7 +37,9 @@ def normalize_resume_context(raw_resume: Optional[Dict[str, Any]], fallback_role
         or fallback_role
     )
 
-    skills = _coerce_string_list(data.get("all_skills") or data.get("skills"))
+    skills = extract_resume_skills(data) if data.get("raw_text") else _coerce_string_list(
+        data.get("all_skills") or data.get("skills")
+    )
     missing_skills = _coerce_string_list(data.get("missing_skills") or data.get("skill_gaps"))
     matching_skills = _coerce_string_list(data.get("matching_skills"))
     ats_score = data.get("ats_score")

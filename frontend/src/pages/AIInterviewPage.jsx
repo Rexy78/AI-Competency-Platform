@@ -35,6 +35,7 @@ const AIInterviewPage = () => {
   const [evaluation, setEvaluation] = useState(null);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [loadingEval, setLoadingEval] = useState(false);
+  const [questionError, setQuestionError] = useState('');
   const [scores, setScores] = useState([]);
 
   const currentQ = questions[currentIdx];
@@ -54,74 +55,67 @@ const AIInterviewPage = () => {
   const handleStartSession = async () => {
     setLoadingQuestions(true);
     setQuestions([]);
+    setQuestionError('');
     resetSessionState();
 
     const endpoint = sessionType === 'assessment' ? '/interview/generate-topic-test' : '/interview/generate';
+    let questionList = [];
 
     try {
       const res = await api.post(endpoint, {
         target_role: targetRole,
         question_count: sessionType === 'assessment' ? 5 : 10,
       });
-      const questionList = res.data?.questions || [];
-      if (questionList.length > 0) {
-        setQuestions(questionList.filter((item) => item?.question));
-        setCurrentIdx(0);
-        return;
-      }
+      questionList = (res.data?.questions || []).filter((item) => item?.question);
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoadingQuestions(false);
+      if (sessionType === 'assessment') {
+        setQuestionError(err?.response?.data?.detail || 'Unable to generate assessment questions. Please try again.');
+        setLoadingQuestions(false);
+        return;
+      }
     }
 
-    const fallbackQuestions = sessionType === 'assessment'
-      ? [
-          {
-            id: 1,
-            category: 'Java',
-            question: 'Which Java concept is most important for safe memory usage in a backend service?',
-            options: ['Garbage Collection', 'CSS layout', 'HTML parsing', 'JSON serialization'],
-            correct_option: 0,
-            explanation: 'Garbage Collection is central to Java memory management and runtime stability.',
-            difficulty: 'Intermediate',
-          },
-          {
-            id: 2,
-            category: 'REST API',
-            question: 'What is the main purpose of HTTP status codes in a REST API?',
-            options: ['To style the UI', 'To communicate request outcome to the client', 'To create database tables', 'To manage CSS classes'],
-            correct_option: 1,
-            explanation: 'HTTP status codes tell the client whether the request succeeded or failed.',
-            difficulty: 'Beginner',
-          },
-        ]
-      : [
-          {
-            id: 1,
-            category: 'Technical',
-            question: `In a ${targetRole} role, how would you design a fault-tolerant backend system that handles failures, retries, and observability?`,
-            sample_answer: 'Discuss stateless services, retry policies, circuit breakers, logging, metrics, and graceful degradation.',
-            difficulty: 'Advanced',
-          },
-          {
-            id: 2,
-            category: 'Behavioral',
-            question: `Tell us about a time you handled a production issue or deadline pressure in a ${targetRole} project. What did you do?`,
-            sample_answer: 'Use STAR format and show prioritization, communication, and measurable improvement.',
-            difficulty: 'Intermediate',
-          },
-          {
-            id: 3,
-            category: 'System Design',
-            question: `How would you design a scalable API and data layer for an application serving high traffic in a ${targetRole} environment?`,
-            sample_answer: 'Explain load balancing, caching, DB choices, API boundaries, and observability.',
-            difficulty: 'Advanced',
-          },
-        ];
+    if (questionList.length > 0) {
+      setQuestions(questionList);
+      setCurrentIdx(0);
+      setLoadingQuestions(false);
+      return;
+    }
+
+    if (sessionType === 'assessment') {
+      setQuestionError('No assessment questions were returned. Please try again.');
+      setLoadingQuestions(false);
+      return;
+    }
+
+    const fallbackQuestions = [
+      {
+        id: 1,
+        category: 'Technical',
+        question: `In a ${targetRole} role, how would you design a fault-tolerant backend system that handles failures, retries, and observability?`,
+        sample_answer: 'Discuss stateless services, retry policies, circuit breakers, logging, metrics, and graceful degradation.',
+        difficulty: 'Advanced',
+      },
+      {
+        id: 2,
+        category: 'Behavioral',
+        question: `Tell us about a time you handled a production issue or deadline pressure in a ${targetRole} project. What did you do?`,
+        sample_answer: 'Use STAR format and show prioritization, communication, and measurable improvement.',
+        difficulty: 'Intermediate',
+      },
+      {
+        id: 3,
+        category: 'System Design',
+        question: `How would you design a scalable API and data layer for an application serving high traffic in a ${targetRole} environment?`,
+        sample_answer: 'Explain load balancing, caching, DB choices, API boundaries, and observability.',
+        difficulty: 'Advanced',
+      },
+    ];
 
     setQuestions(fallbackQuestions);
     setCurrentIdx(0);
+    setLoadingQuestions(false);
   };
 
   const handleEvaluateAnswer = async (e) => {
@@ -453,6 +447,7 @@ const AIInterviewPage = () => {
                 <p className="text-xs text-slate-400 max-w-lg mx-auto mt-2">
                   The AI interview coach generates questions based on your resume, target role, and skill gaps so you can practice realistic technical and behavioral interviews, plus resume-topic assessments.
                 </p>
+                {questionError && <p role="alert" className="mt-3 text-xs text-rose-400">{questionError}</p>}
               </div>
               <button
                 onClick={handleStartSession}

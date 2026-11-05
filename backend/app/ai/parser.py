@@ -2,7 +2,7 @@ import re
 import fitz  # PyMuPDF
 import docx
 from typing import Dict, Any, List
-from app.ai.taxonomy import SKILL_TAXONOMY, categorize_skills
+from app.ai.taxonomy import SKILL_ALIASES, SKILL_TAXONOMY, categorize_skills
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
     text = ""
@@ -81,7 +81,24 @@ def extract_skills_from_text(text: str) -> List[str]:
             if re.search(pattern, lowered_text):
                 found_skills.add(skill)
 
+    for canonical_skill, aliases in SKILL_ALIASES.items():
+        for alias in aliases:
+            pattern = r"\b" + re.escape(alias.lower()).replace(r"\-", r"[- ]") + r"\b"
+            if re.search(pattern, lowered_text):
+                found_skills.add(canonical_skill)
+                break
+
     return list(found_skills)
+
+
+def extract_resume_skills(parsed_data: Dict[str, Any]) -> List[str]:
+    stored_skills = parsed_data.get("all_skills", [])
+    if not isinstance(stored_skills, list):
+        stored_skills = []
+
+    raw_text = parsed_data.get("raw_text", "")
+    extracted_skills = extract_skills_from_text(raw_text) if isinstance(raw_text, str) else []
+    return list(dict.fromkeys([*stored_skills, *extracted_skills]))
 
 def extract_sections(text: str) -> Dict[str, Any]:
     lines = [l.strip() for l in text.split("\n") if l.strip()]

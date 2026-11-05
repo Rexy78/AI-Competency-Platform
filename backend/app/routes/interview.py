@@ -16,6 +16,7 @@ from app.ai.agentic_interview import (
     plan_interview,
     run_coding_challenge,
 )
+from app.ai.interview_generator import generate_resume_topic_assessment
 from app.database import get_db
 from app.models.models import (
     InterviewAnswer,
@@ -151,28 +152,48 @@ def get_interview_questions(req: LegacyQuestionGenRequest, current_user: User = 
 @router.post("/generate-topic-test")
 def get_topic_test(req: LegacyQuestionGenRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     profile, skills, target_role, missing = _load_resume_context(current_user, db)
-    return {
-        "questions": [
-            {
-                "id": 1,
-                "category": "Java",
-                "question": "Which Java feature helps reduce memory issues in long-running backend services?",
-                "options": ["Garbage Collection", "HTML Parsing", "CSS Grid", "REST Routing"],
-                "correct_option": 0,
-                "explanation": "Garbage Collection is essential to Java runtime memory management.",
-                "difficulty": "Intermediate",
-            },
-            {
-                "id": 2,
-                "category": "REST API",
-                "question": "Which HTTP method is used to update an existing resource?",
-                "options": ["GET", "POST", "PUT", "DELETE"],
-                "correct_option": 2,
-                "explanation": "PUT is commonly used to replace or update an existing resource.",
-                "difficulty": "Beginner",
-            }
-        ]
-    }
+    target_role = req.target_role or target_role
+    resume_summary = json.dumps({
+        "experience": profile.get("experience", []),
+        "projects": profile.get("projects", []),
+    }, ensure_ascii=False)
+    generated = generate_resume_topic_assessment(
+        resume_summary,
+        skills,
+        target_role,
+        req.question_count,
+    )
+
+    questions = []
+    for item in (generated.get("questions") or []):
+        if not isinstance(item, dict):
+            continue
+        question = str(item.get("question") or "").strip()
+        options = item.get("options")
+        if not question or not isinstance(options, list) or len(options) < 2:
+            continue
+        raw_correct_option = item.get("correct_option")
+        if isinstance(raw_correct_option, str) and raw_correct_option.strip().upper() in {"A", "B", "C", "D"}:
+            raw_correct_option = ord(raw_correct_option.strip().upper()) - ord("A")
+        try:
+            correct_option = int(raw_correct_option)
+        except (TypeError, ValueError):
+            continue
+        if correct_option < 0 or correct_option >= len(options):
+            continue
+        questions.append({
+            "id": len(questions) + 1,
+            "category": str(item.get("category") or target_role),
+            "question": question,
+            "options": [str(option) for option in options],
+            "correct_option": correct_option,
+            "explanation": str(item.get("explanation") or ""),
+            "difficulty": str(item.get("difficulty") or "Intermediate"),
+        })
+
+    if not questions:
+        raise HTTPException(status_code=502, detail="Assessment questions could not be generated. Please try again.")
+    return {"questions": questions}
 
 
 @router.post("/evaluate")

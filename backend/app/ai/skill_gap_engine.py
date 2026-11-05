@@ -1,18 +1,30 @@
 from typing import Dict, Any, List
-from app.ai.taxonomy import JOB_ROLE_REQUIREMENTS, SKILL_TAXONOMY
+from app.ai.taxonomy import JOB_ROLE_REQUIREMENTS, SKILL_ALIASES, SKILL_TAXONOMY
+
+
+def _normalize_skill(skill: str) -> str:
+    normalized = " ".join(skill.casefold().replace("-", " ").split())
+    for canonical_skill, aliases in SKILL_ALIASES.items():
+        canonical = " ".join(canonical_skill.casefold().split())
+        normalized_aliases = {
+            " ".join(alias.casefold().replace("-", " ").split())
+            for alias in aliases
+        }
+        if normalized == canonical or normalized in normalized_aliases:
+            return canonical
+    return normalized
 
 def analyze_skill_gaps(user_skills: List[str], target_role: str = "Java Backend Developer") -> Dict[str, Any]:
     role_info = JOB_ROLE_REQUIREMENTS.get(target_role, JOB_ROLE_REQUIREMENTS["Java Backend Developer"])
     required_skills = role_info["required"]
 
-    user_skills_lower = [s.lower().strip() for s in user_skills]
+    user_skills_normalized = {_normalize_skill(skill) for skill in user_skills}
 
     gap_items = []
     matched_count = 0
 
     for req in required_skills:
-        req_lower = req.lower().strip()
-        is_matched = any(req_lower in s or s in req_lower for s in user_skills_lower)
+        is_matched = _normalize_skill(req) in user_skills_normalized
 
         if is_matched:
             matched_count += 1
@@ -52,7 +64,10 @@ def analyze_skill_gaps(user_skills: List[str], target_role: str = "Java Backend 
 
     for cat in categories:
         target_skills = cat_skill_map[cat]
-        user_cat_score = sum(1 for s in user_skills_lower if any(t in s for t in target_skills))
+        user_cat_score = sum(
+            1 for skill in user_skills_normalized
+            if any(_normalize_skill(target) in skill for target in target_skills)
+        )
         current_score = min(100, max(30, user_cat_score * 35))
         required_score = 85 if cat in ["Programming", "Backend", "Database"] else 75
         radar_data.append({

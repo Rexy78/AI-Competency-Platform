@@ -5,6 +5,107 @@ import Footer from '../components/Footer';
 import api from '../services/api';
 import { Bot, Send, User, Loader2, Zap } from 'lucide-react';
 
+const renderInlineMarkdown = (text, keyPrefix) => {
+  const tokens = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g);
+  return tokens.map((token, index) => {
+    const key = `${keyPrefix}-${index}`;
+    if (token.startsWith('**') && token.endsWith('**')) {
+      return <strong key={key}>{token.slice(2, -2)}</strong>;
+    }
+    if (token.startsWith('`') && token.endsWith('`')) {
+      return <code key={key} className="rounded bg-slate-800 px-1 py-0.5 text-indigo-200">{token.slice(1, -1)}</code>;
+    }
+    if (token.startsWith('*') && token.endsWith('*')) {
+      return <em key={key}>{token.slice(1, -1)}</em>;
+    }
+    return token;
+  });
+};
+
+const renderMessage = (text) => {
+  const lines = text.split(/\r?\n/);
+  const blocks = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index].trim();
+    if (!line) {
+      index += 1;
+      continue;
+    }
+
+    if (line.startsWith('```')) {
+      const codeLines = [];
+      index += 1;
+      while (index < lines.length && !lines[index].trim().startsWith('```')) {
+        codeLines.push(lines[index]);
+        index += 1;
+      }
+      if (index < lines.length) index += 1;
+      blocks.push(
+        <pre key={`code-${blocks.length}`} className="overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs">
+          <code>{codeLines.join('\n')}</code>
+        </pre>
+      );
+      continue;
+    }
+
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      const HeadingTag = `h${heading[1].length}`;
+      blocks.push(
+        <HeadingTag key={`heading-${blocks.length}`} className="font-bold text-white">
+          {renderInlineMarkdown(heading[2], `heading-${blocks.length}`)}
+        </HeadingTag>
+      );
+      index += 1;
+      continue;
+    }
+
+    const listMatch = line.match(/^[-*]\s+(.+)|^\d+[.)]\s+(.+)/);
+    if (listMatch) {
+      const ordered = /^\d+[.)]\s+/.test(line);
+      const ListTag = ordered ? 'ol' : 'ul';
+      const items = [];
+      while (index < lines.length) {
+        const itemMatch = lines[index].trim().match(/^[-*]\s+(.+)|^\d+[.)]\s+(.+)/);
+        if (!itemMatch || /^\d+[.)]\s+/.test(lines[index].trim()) !== ordered) break;
+        items.push(itemMatch[1] || itemMatch[2]);
+        index += 1;
+      }
+      blocks.push(
+        <ListTag key={`list-${blocks.length}`} className={`space-y-1 pl-5 ${ordered ? 'list-decimal' : 'list-disc'}`}>
+          {items.map((item, itemIndex) => (
+            <li key={`item-${itemIndex}`}>{renderInlineMarkdown(item, `list-${blocks.length}-${itemIndex}`)}</li>
+          ))}
+        </ListTag>
+      );
+      continue;
+    }
+
+    const paragraph = [line];
+    index += 1;
+    while (
+      index < lines.length
+      && lines[index].trim()
+      && !lines[index].trim().startsWith('```')
+      && !/^(#{1,3})\s+/.test(lines[index].trim())
+      && !/^[-*]\s+/.test(lines[index].trim())
+      && !/^\d+[.)]\s+/.test(lines[index].trim())
+    ) {
+      paragraph.push(lines[index].trim());
+      index += 1;
+    }
+    blocks.push(
+      <p key={`paragraph-${blocks.length}`}>
+        {renderInlineMarkdown(paragraph.join(' '), `paragraph-${blocks.length}`)}
+      </p>
+    );
+  }
+
+  return <div className="space-y-2">{blocks}</div>;
+};
+
 const AstraChatbotPage = () => {
   const [messages, setMessages] = useState([
     {
@@ -179,7 +280,7 @@ const AstraChatbotPage = () => {
                     {isBot ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                   </div>
 
-                  <div className={`max-w-xl p-4 rounded-2xl text-xs leading-relaxed space-y-1 ${
+                  <div className={`max-w-2xl p-4 rounded-2xl text-sm leading-6 space-y-2 ${
                     isBot
                       ? 'bg-slate-900/90 border border-slate-800 text-slate-200'
                       : 'bg-indigo-600 text-white shadow-glow'
@@ -188,7 +289,7 @@ const AstraChatbotPage = () => {
                       <span>{msg.sender}</span>
                       <span>{msg.timestamp}</span>
                     </div>
-                    <p className="whitespace-pre-line">{msg.text}</p>
+                    {renderMessage(msg.text)}
                   </div>
                 </div>
               );

@@ -1,5 +1,6 @@
 from app.ai.chatbot import _build_full_prompt, _generate_fallback_response, normalize_resume_context
 from app.ai.context_manager import ContextManager
+from app.ai.prompts import ASTRA_CHATBOT_SYSTEM_PROMPT
 
 
 def test_normalize_resume_context_uses_resume_data():
@@ -100,6 +101,11 @@ def test_chat_prompt_uses_history_and_avoids_repeating_answers():
 
     assert "Start by tailoring your resume." in prompt
     assert "do not repeat an earlier answer verbatim" in prompt
+
+
+def test_chatbot_system_prompt_prioritizes_clear_direct_answers():
+    assert "Answer the user's latest question directly in the first sentence" in ASTRA_CHATBOT_SYSTEM_PROMPT
+    assert "Ask one focused follow-up question only when essential information is missing" in ASTRA_CHATBOT_SYSTEM_PROMPT
 
 
 def test_context_manager_detects_skill_priority_questions():
